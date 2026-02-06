@@ -1,19 +1,21 @@
-from fastapi import APIRouter
-from starlette import status
+from fastapi import APIRouter, Depends, status
 
 from image_processor.media.schema import CreateMediaSchema
+from image_processor.media.service import MediaService
+from image_processor.service_provider import ServiceProvider
 
 router = APIRouter(
     tags=['media'],
-    prefix='/media',
 )
 
 @router.post(
-    "",
-    response_model=CreateMediaSchema,
+    "/process-media",
+    # response_model=CreateMediaSchema,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_media(
         media_payload: CreateMediaSchema,
+        media_service: MediaService = Depends(ServiceProvider.get_media_service),
 ):
-    return media_payload
+    await media_service.save_file(media_payload)
+    return {'status':'uploaded'}

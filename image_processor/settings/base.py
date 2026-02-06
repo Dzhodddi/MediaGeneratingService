@@ -5,10 +5,10 @@ from pydantic_settings import BaseSettings
 
 
 class AppEnvTypes(Enum):
-    local: str = 'local'
-    test: str = 'test'
-    qa: str = 'qa'
-    production: str = 'production'
+    local  = 'local'
+    test = 'test'
+    qa = 'qa'
+    production = 'production'
 
 
 class BaseAppSettings(BaseSettings):

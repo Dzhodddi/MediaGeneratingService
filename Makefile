@@ -1,4 +1,4 @@
 .PHONY: start
 
 start:
-		uv run uvicorn image_processor.main:service --reload
+		uv run --active uvicorn image_processor.main:service --reload

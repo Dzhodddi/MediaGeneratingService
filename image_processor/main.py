@@ -37,7 +37,7 @@ def get_application() -> FastAPI:
 
     application.add_exception_handler(HTTPException, http_error_handler)
     application.add_exception_handler(RequestValidationError, http422_error_handler)
-    application.include_router(api_router, prefix='/api/v1')
+    application.include_router(api_router)
 
     return application
 
