@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from image_processor.core.views import router as health_router
+from image_processor.media.views import router as media_router
 
 
 class ErrorResponse(BaseModel):
@@ -31,3 +32,4 @@ api_router = APIRouter(
 )
 
 api_router.include_router(health_router)
+api_router.include_router(media_router)
