@@ -1,5 +1,6 @@
 import ffmpeg
 
+from image_processor.broker import Broker
 from image_processor.core.constants import CHUNK_SIZE
 from image_processor.google_clients.google_drive_client import GoogleDriveClient
 from image_processor.media.schema import CreateMediaSchema
@@ -10,8 +11,10 @@ class MediaService:
     def __init__(
             self,
             google_drive_client: GoogleDriveClient,
+            broker: Broker,
     ):
         self._google_drive_client = google_drive_client
+        self._broker = broker
 
     @staticmethod
     def concat_videos(payload: CreateMediaSchema):
@@ -57,10 +60,12 @@ class MediaService:
     ):
         process = self.concat_videos(payload)
 
-        upload_url = await self._google_drive_client.upload_file_in_stream(
+        upload_url, error = await self._google_drive_client.upload_file_in_stream(
             filename=payload.task_name,
             mime_type="video/mp4",
         )
+        if error:
+            return error
 
         offset = 0
         current_chunk = process.stdout.read(CHUNK_SIZE)
@@ -71,22 +76,26 @@ class MediaService:
             end = offset + chunk_len - 1
             if not next_chunk:
                 total_size = offset + chunk_len
-                await self._google_drive_client.upload_chunk(
+                error = await self._google_drive_client.upload_chunk(
                     upload_url=upload_url,
                     chunk=current_chunk,
                     start=start,
                     end=end,
                     total=total_size
                 )
+                if error:
+                    return error
                 break
             else:
-                await self._google_drive_client.upload_chunk(
+                error = await self._google_drive_client.upload_chunk(
                     upload_url=upload_url,
                     chunk=current_chunk,
                     start=start,
                     end=end,
                     total="*",
                 )
+                if error:
+                    return error
             offset += chunk_len
             current_chunk = next_chunk
 
@@ -96,7 +105,4 @@ class MediaService:
             self,
             media_payload: CreateMediaSchema,
     ):
-        async with self._google_drive_client as client:
-            await self.upload_ffmpeg_to_drive(
-                media_payload,
-            )
+        await self._broker.publish(media_payload)
