@@ -8,11 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from image_processor.api_router import api_router
 from image_processor.config import get_settings
+from image_processor.limiter import limiter
 from image_processor.service_provider import ServiceProvider
 from image_processor.errors.error_handlers import (
     http422_error_handler,
     http_error_handler,
 )
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 
 def get_application() -> FastAPI:
@@ -21,6 +24,8 @@ def get_application() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         service_provider = ServiceProvider()
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
         app.state.service_provider = service_provider
         await service_provider.google_drive_client.setup()
         await service_provider.rabbitmq_broker.connect()
