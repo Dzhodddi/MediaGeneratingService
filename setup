@@ -1,16 +1,17 @@
 #!/bin/bash
-
+RED='\033[0;31m'
+NC='\033[0m'
 set -e
 
 if [ -e "client_secret.json" ]; then
     echo "Client secret exists. Continuing..."
 else
-    echo "Client secret doesn't exist. Please create one (how to get it is in README.md) and place it in the root directory of this project." >&2
+    echo -e "${RED}'client_secret.json' doesn't exist. file Please create one (how to get it is in README.md) and place it in the root directory of this project.${NC}" >&2
     exit 1
 fi
 
 echo "Creating .venv"
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 echo "Installing dependencies..."
@@ -25,6 +26,11 @@ fi
 echo "Provide your ELEVENLABS_API_KEY is .env file to use app"
 
 echo "Calling auth flow to create access token file..."
-python image_processor/auth.py
+if python3 image_processor/auth.py; then
+  echo "Token file is created!"
+else
+  echo -e "${RED}Auth flow is failed. Ensure that 'client_secret.json' is valid!${NC}"
+  exit 1
+fi
 
 echo "Activate .venv using .venv/bin/activate"

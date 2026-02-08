@@ -1,0 +1,2 @@
+GOOGLE_AUTH_ERROR = "Not authenticated. Check 'token.json' file. Try run auth flow using 'make auth' and try again."
+ELEVENLAB_AUTH_ERROR = "Not authenticated. Check API KEY in .env file and try again."

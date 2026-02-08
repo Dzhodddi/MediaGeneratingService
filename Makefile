@@ -7,7 +7,7 @@ down:
 	docker compose down
 
 setup:
-	./setup
+	bash setup
 
 auth:
 	echo "Make sure to run in activated .venv"

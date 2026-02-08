@@ -18,7 +18,9 @@ class ElevenLabsClient:
         self, session: aiohttp.ClientSession, text: str, voice_name
     ) -> str:
         if not self._mapped_name:
-            await self._fetch_name_id_map()
+            ok = await self._fetch_name_id_map()
+            if not ok:
+                raise Exception("Error when fetching voice id")
 
         voice_id = self._get_speech_id_by_name(voice_name)
         headers = {
@@ -56,7 +58,7 @@ class ElevenLabsClient:
         speech_id = self._mapped_name.get(name)
         if not speech_id:
             self._logger.warning("Speech id by name not found")
-        return speech_id or "3AMU7jXQuQa3oRvRqUmb"
+        return speech_id or "JBFqnCBsd6RMkjVDRZzb"
 
     async def _fetch_name_id_map(self):
         if self._mapped_name:
@@ -67,17 +69,31 @@ class ElevenLabsClient:
             "xi-api-key": get_settings().ELEVENLABS_API_KEY,
             "Content-Type": "application/json",
         }
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status != 200:
-                        self._logger.warning("Failed to fetch voice")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                text = await response.text()
+                if response.status == 401:
+                    self._logger.warning(f"API KEY is invalid {text}")
+                    return False
 
-                    data = await response.json()
-                    self._logger.debug(data)
-                    self._mapped_name = {
-                        voice["name"]: voice["voice_id"]
-                        for voice in data.get("voices", [])
-                    }
-        except Exception as e:
-            self._logger.error(f"Error fetching name: {e}")
+                if response.status != 200:
+                    self._logger.warning("Failed to fetch voice")
+                    return False
+
+                data = await response.json()
+                mapped_name = {}
+                for voice in data.get('voices', []):
+                    full_name = voice.get('name', "")
+                    voice_id = voice.get('voice_id', "")
+
+                    mapped_name[full_name] = voice_id
+                    short_name = full_name.split(' ')[0].split('-')[0].strip()
+                    if short_name not in mapped_name:
+                        mapped_name[short_name] = voice_id
+                self._mapped_name = mapped_name
+                return True
+
+    async def is_valid(self) -> bool:
+        if self._mapped_name:
+            return True
+        return await self._fetch_name_id_map()

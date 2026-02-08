@@ -7,9 +7,13 @@ import aiohttp
 import ffmpeg
 from itertools import product
 
+from fastapi import HTTPException, status
+
 from image_processor.broker import Broker
+from image_processor.config import get_settings
 from image_processor.core.constants import CHUNK_SIZE, FILE_CHUNK_SIZE
 from image_processor.core.timer import timer
+from image_processor.errors.messages import GOOGLE_AUTH_ERROR, ELEVENLAB_AUTH_ERROR
 from image_processor.google_clients.google_drive_client import GoogleDriveClient
 from image_processor.media.elevenlabs_client import ElevenLabsClient
 from image_processor.media.schema import CreateMediaSchema
@@ -29,6 +33,18 @@ class MediaService:
         self._eleven_labs_client = eleven_labs_client
 
     async def save_file(self, media_payload: CreateMediaSchema):
+        is_google_client_valid = await self._google_drive_client.is_valid()
+        if not is_google_client_valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=GOOGLE_AUTH_ERROR,
+            )
+        is_eleven_labs_client_valid = await self._eleven_labs_client.is_valid()
+        if not is_eleven_labs_client_valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ELEVENLAB_AUTH_ERROR,
+            )
         await self._broker.publish(media_payload)
 
     @timer

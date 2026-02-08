@@ -47,6 +47,14 @@ class GoogleDriveClient:
         if not self.__creds.valid or self.__creds.expired:
             self.__creds.refresh(Request())
 
+    async def is_valid(self) -> bool:
+        if not self.is_ready():
+            return False
+        async with self.__session.get("https://www.googleapis.com/drive/v3/about?fields=user") as resp:
+            if resp.status == 401:
+                return False
+            return resp.status == 200
+
     async def upload_file_in_stream(
         self,
         filename: str,

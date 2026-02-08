@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Callable, Awaitable
@@ -25,7 +26,20 @@ class Broker:
         self._logger = logger
 
     async def connect(self):
-        self._connection = await aio_pika.connect_robust(self._uri)
+        retries = 5
+        while retries > 0:
+            try:
+                self._connection = await aio_pika.connect_robust(self._uri)
+                self._logger.debug("RabbitMQ is started")
+                break
+            except (ConnectionRefusedError, aio_pika.exceptions.AMQPConnectionError):
+                retries -= 1
+                if retries > 0:
+                    self._logger.warning(f"RabbitMQ not ready... retrying in 5s ({retries} attempts left)")
+                    await asyncio.sleep(5)
+                else:
+                    self._logger.error("Failed to connect to RabbitMQ")
+                    raise
         self._channel = await self._connection.channel()
         await self._channel.set_qos(prefetch_count=1)
         self._queue = await self._channel.declare_queue(
