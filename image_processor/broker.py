@@ -35,7 +35,9 @@ class Broker:
             except (ConnectionRefusedError, aio_pika.exceptions.AMQPConnectionError):
                 retries -= 1
                 if retries > 0:
-                    self._logger.warning(f"RabbitMQ not ready... retrying in 5s ({retries} attempts left)")
+                    self._logger.warning(
+                        f"RabbitMQ not ready... retrying in 5s ({retries} attempts left)"
+                    )
                     await asyncio.sleep(5)
                 else:
                     self._logger.error("Failed to connect to RabbitMQ")

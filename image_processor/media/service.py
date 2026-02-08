@@ -10,7 +10,6 @@ from itertools import product
 from fastapi import HTTPException, status
 
 from image_processor.broker import Broker
-from image_processor.config import get_settings
 from image_processor.core.constants import CHUNK_SIZE, FILE_CHUNK_SIZE
 from image_processor.core.timer import timer
 from image_processor.errors.messages import GOOGLE_AUTH_ERROR, ELEVENLAB_AUTH_ERROR

@@ -1,7 +1,10 @@
-.PHONY: up down setup auth
+.PHONY: up down setup auth rebuild
 
 up:
 	docker compose up
+
+rebuild:
+	docker compose up --build
 
 down:
 	docker compose down

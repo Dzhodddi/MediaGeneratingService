@@ -82,12 +82,12 @@ class ElevenLabsClient:
 
                 data = await response.json()
                 mapped_name = {}
-                for voice in data.get('voices', []):
-                    full_name = voice.get('name', "")
-                    voice_id = voice.get('voice_id', "")
+                for voice in data.get("voices", []):
+                    full_name = voice.get("name", "")
+                    voice_id = voice.get("voice_id", "")
 
                     mapped_name[full_name] = voice_id
-                    short_name = full_name.split(' ')[0].split('-')[0].strip()
+                    short_name = full_name.split(" ")[0].split("-")[0].strip()
                     if short_name not in mapped_name:
                         mapped_name[short_name] = voice_id
                 self._mapped_name = mapped_name
