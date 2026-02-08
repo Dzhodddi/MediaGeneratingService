@@ -19,6 +19,10 @@ RUN uv sync --frozen --no-install-project
 
 FROM python:3.13-slim AS dev
 
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /opt/venv /opt/venv
 
 ENV VIRTUAL_ENV=/opt/venv

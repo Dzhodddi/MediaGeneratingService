@@ -8,6 +8,7 @@ from image_processor.settings.logging import configure_logging
 
 logging.config.dictConfig(configure_logging(get_settings()))
 
+
 class ServiceProvider:
     media_service: MediaService
     google_drive_client: GoogleDriveClient
@@ -17,7 +18,7 @@ class ServiceProvider:
     def __init__(self):
         cls = self.__class__
         cls.logger = logging.getLogger(__name__)
-        cls.google_drive_client = GoogleDriveClient("token.json")
+        cls.google_drive_client = GoogleDriveClient("token.json", cls.logger)
         cls.rabbitmq_broker = cls._get_broker()
         cls.media_service = cls._get_media_service()
 
@@ -34,7 +35,9 @@ class ServiceProvider:
         return MediaService(
             cls.google_drive_client,
             cls.rabbitmq_broker,
+            cls.logger,
         )
 
-    def shutdown(self):
-        pass
+    async def shutdown(self):
+        await self.rabbitmq_broker.close()
+        await self.google_drive_client.shutdown()

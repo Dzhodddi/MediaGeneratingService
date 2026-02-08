@@ -27,22 +27,19 @@ class Broker:
     async def connect(self):
         self._connection = await aio_pika.connect_robust(self._uri)
         self._channel = await self._connection.channel()
-        self._queue = await self._channel.declare_queue(self._queue_name, durable=self._durable)
+        await self._channel.set_qos(prefetch_count=1)
+        self._queue = await self._channel.declare_queue(
+            self._queue_name, durable=self._durable
+        )
 
-    async def publish(
-            self,
-            message: CreateMediaSchema
-    ):
+    async def publish(self, message: CreateMediaSchema):
         if not self._connection:
             await self.connect()
         await self._channel.default_exchange.publish(
-            aio_pika.Message(
-                body=json.dumps(
-                    message.model_dump(mode='json')
-                ).encode()
-            ),
+            aio_pika.Message(body=json.dumps(message.model_dump(mode="json")).encode()),
             routing_key=self._queue_name,
         )
+        self._logger.info(f"Published message {message.task_name}")
 
     async def close(self):
         if self._connection and not self._connection.is_closed:
@@ -56,8 +53,11 @@ class Broker:
         async with self._queue.iterator() as queue_iter:
             async for message in queue_iter:
                 async with message.process():
-                    self._logger.info(f"Received message: {message.body.decode()}")
-                    payload_dict = json.loads(message.body.decode("utf-8"))
-                    email_data = CreateMediaSchema(**payload_dict)
-                    await callback(email_data)
-                    self._logger.info(f"Processed message: {message.body.decode()}")
+                    try:
+                        self._logger.info("Received message")
+                        payload_dict = json.loads(message.body.decode("utf-8"))
+                        email_data = CreateMediaSchema(**payload_dict)
+                        await callback(email_data)
+                    except Exception as e:
+                        self._logger.error(f"Failed to process message: {e}")
+                        raise

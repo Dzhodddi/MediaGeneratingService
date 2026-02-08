@@ -1,4 +1,7 @@
-.PHONY: start
+.PHONY: up down
 
-start:
-		uv run --active uvicorn image_processor.main:service --reload
+up:
+	docker compose up
+
+down:
+	docker compose down

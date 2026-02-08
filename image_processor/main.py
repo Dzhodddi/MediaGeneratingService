@@ -1,4 +1,4 @@
-from pathlib import Path
+import asyncio
 
 from contextlib import asynccontextmanager
 
@@ -9,9 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from image_processor.api_router import api_router
 from image_processor.config import get_settings
 from image_processor.service_provider import ServiceProvider
-from image_processor.errors.error_handlers import http422_error_handler, http_error_handler
-
-BASE_DIR = Path(__file__).resolve().parent.parent
+from image_processor.errors.error_handlers import (
+    http422_error_handler,
+    http_error_handler,
+)
 
 
 def get_application() -> FastAPI:
@@ -19,11 +20,21 @@ def get_application() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        service_provider = ServiceProvider()
+        app.state.service_provider = service_provider
+        await service_provider.google_drive_client.setup()
+        await service_provider.rabbitmq_broker.connect()
+
+        task = asyncio.create_task(
+            service_provider.rabbitmq_broker.consume(
+                service_provider.media_service.process_task
+            )
+        )
         try:
-            app.state.service_provider = ServiceProvider()
             yield
         finally:
-            app.state.service_provider.shutdown()
+            task.cancel()
+            await service_provider.shutdown()
 
     application = FastAPI(lifespan=lifespan)
 
@@ -31,8 +42,8 @@ def get_application() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.allowed_cors_origin,
         allow_credentials=settings.allowed_cors_credentials,
-        allow_methods=['*'],
-        allow_headers=['*'],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     application.add_exception_handler(HTTPException, http_error_handler)
