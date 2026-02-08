@@ -3,6 +3,7 @@ import logging
 from image_processor.broker import Broker
 from image_processor.config import get_settings
 from image_processor.google_clients.google_drive_client import GoogleDriveClient
+from image_processor.media.elevenlabs_client import ElevenLabsClient
 from image_processor.media.service import MediaService
 from image_processor.settings.logging import configure_logging
 
@@ -14,11 +15,13 @@ class ServiceProvider:
     google_drive_client: GoogleDriveClient
     rabbitmq_broker: Broker
     logger: logging.Logger
+    eleven_labs_client: ElevenLabsClient
 
     def __init__(self):
         cls = self.__class__
         cls.logger = logging.getLogger(__name__)
         cls.google_drive_client = GoogleDriveClient("token.json", cls.logger)
+        cls.eleven_labs_client = ElevenLabsClient(cls.logger)
         cls.rabbitmq_broker = cls._get_broker()
         cls.media_service = cls._get_media_service()
 
@@ -36,6 +39,7 @@ class ServiceProvider:
             cls.google_drive_client,
             cls.rabbitmq_broker,
             cls.logger,
+            cls.eleven_labs_client,
         )
 
     async def shutdown(self):

@@ -25,3 +25,5 @@ class AppSettings(BaseSettings):
     RABBITMQ_HOST: str = os.getenv("RABBITMQ_HOST")
     RABBITMQ_PORT: str = os.getenv("RABBITMQ_PORT")
     RABBITMQ_QUEUE_NAME: str = os.getenv("RABBITMQ_QUEUE_NAME")
+
+    ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY")

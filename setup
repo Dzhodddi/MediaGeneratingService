@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+
+if [ -e "client_secret.json" ]; then
+    echo "Client secret exists. Continuing..."
+else
+    echo "Client secret doesn't exist. Please create one (how to get it is in README.md) and place it in the root directory of this project." >&2
+    exit 1
+fi
+
+echo "Creating .venv"
+python -m venv .venv
+source .venv/bin/activate
+
+echo "Installing dependencies..."
+pip install -r requirements.txt
+
+echo "Setting up environment variables..."
+if [ ! -f ".env" ]; then
+  cp .env.example .env
+else
+  echo ".env already exists. Continuing..."
+fi
+echo "Provide your ELEVENLABS_API_KEY is .env file to use app"
+
+echo "Calling auth flow to create access token file..."
+python image_processor/auth.py
+
+echo "Activate .venv using .venv/bin/activate"
