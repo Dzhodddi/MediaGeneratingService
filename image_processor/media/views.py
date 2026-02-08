@@ -9,6 +9,7 @@ router = APIRouter(
     tags=["media"],
 )
 
+
 @router.post(
     "/process-media",
     status_code=status.HTTP_201_CREATED,

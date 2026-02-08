@@ -65,9 +65,10 @@ class MediaService:
             random.shuffle(combinations)
             for i, video_combo in enumerate(combinations):
                 selected_audio = random.choice(audio_list)
-                selected_speech = random.choice(speech_list)
+                current_speech_list = list(speech_list)
+                random.shuffle(current_speech_list)
                 part_path = await self._generate_part(
-                    i, list(video_combo), selected_audio, selected_speech
+                    i, list(video_combo), selected_audio, current_speech_list
                 )
                 generated_parts.append(part_path)
 
@@ -125,7 +126,7 @@ class MediaService:
 
     @timer
     async def _generate_part(
-        self, index: int, video_paths: list, audio_path: str, speech_path: str
+        self, index: int, video_paths: list, audio_path: str, speech_path: list[str]
     ) -> str:
         part_filename = f"/tmp/part_{index}.mp4"
 
@@ -220,7 +221,7 @@ class MediaService:
 
     @staticmethod
     def _get_part_args(
-        video_paths: list, audio_path: str, speech_path: str, output_filename: str
+        video_paths: list, audio_path: str, speech_path: list[str], output_filename: str
     ):
         v_streams = [
             ffmpeg.input(path).video.filter("scale", 720, 1280).filter("fps", 30)
@@ -235,9 +236,16 @@ class MediaService:
         video_audio = ffmpeg.input(audio_path, stream_loop=-1).audio.filter(
             "volume", 0.1
         )
-        speech_audio = ffmpeg.input(speech_path).audio.filter("volume", 1)
+        speech_inputs = [ffmpeg.input(speech).audio for speech in speech_path]
+        if len(speech_inputs) > 1:
+            combined_speech = ffmpeg.concat(*speech_inputs, v=0, a=1)
+        else:
+            combined_speech = speech_inputs[0]
+
+        combined_speech = combined_speech.filter("volume", 1.5)
+
         merged_audio = ffmpeg.filter(
-            [video_audio, speech_audio], "amix", inputs=2, duration="longest"
+            [video_audio, combined_speech], "amix", inputs=2, duration="longest"
         )
         return (
             ffmpeg.output(
