@@ -8,7 +8,7 @@ Examples:
 
 # Stack
 
-* **Python 3.12+**
+* **Python 3.11+**
 * **Docker & Docker Compose**
 * **FastAPI**
 * **RabbitMQ**
@@ -57,7 +57,7 @@ make setup
 ```bash
 make up
 ```
-**After about 30 sec app will be ready to use on: http://localhost:8000"
+**After about 30 sec app will be ready to use on: http://localhost:8000"**
 ### 3. Rebuild project (if needed)
 ```bash
 make rebuild
