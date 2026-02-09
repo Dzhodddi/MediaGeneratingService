@@ -26,6 +26,8 @@ fi
 echo "Provide your ELEVENLABS_API_KEY is .env file to use app"
 
 echo "Calling auth flow to create access token file..."
+echo -e "${RED}Make sure that 8080 port is not used! ${NC}"
+
 if python3 image_processor/auth.py; then
   echo "Token file is created!"
 else

@@ -10,7 +10,7 @@ from itertools import product
 from fastapi import HTTPException, status
 
 from image_processor.broker import Broker
-from image_processor.core.constants import CHUNK_SIZE, FILE_CHUNK_SIZE
+from image_processor.core.constants import FILE_CHUNK_SIZE
 from image_processor.core.timer import timer
 from image_processor.errors.messages import GOOGLE_AUTH_ERROR, ELEVENLAB_AUTH_ERROR
 from image_processor.google_clients.google_drive_client import GoogleDriveClient
@@ -145,62 +145,33 @@ class MediaService:
 
     @timer
     async def _stitch_and_upload(self, part_files: list, task_name: str):
-        list_file_path = "/tmp/concat_list.txt"
-
-        with open(list_file_path, "w") as f:
-            for part in part_files:
-                f.write(f"file '{part}'\n")
-
-        args = [
-            "ffmpeg",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            list_file_path,
-            "-c",
-            "copy",
-            "-movflags",
-            "frag_keyframe+empty_moov",
-            "-f",
-            "mp4",
-            "pipe:1",
-        ]
-
-        process = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
-        )
-
-        upload_url = await self._google_drive_client.upload_file_in_stream(
-            filename=f"{task_name}.mp4", mime_type="video/mp4"
-        )
-
-        offset = 0
-        current_chunk = await self._read_exact_chunk(process.stdout, CHUNK_SIZE)
-
-        while current_chunk:
-            next_chunk = await self._read_exact_chunk(process.stdout, CHUNK_SIZE)
-            chunk_len = len(current_chunk)
-
-            await self._google_drive_client.upload_chunk(
-                upload_url,
-                current_chunk,
-                offset,
-                offset + chunk_len - 1,
-                offset + chunk_len if not next_chunk else "*",
+        for index, part_file in enumerate(part_files):
+            file_name = f"{task_name}_{index + 1}.mp4"
+            upload_url = await self._google_drive_client.upload_file_in_stream(
+                filename=file_name, mime_type="video/mp4"
             )
-            offset += chunk_len
-            current_chunk = next_chunk
 
-        await process.wait()
+            file_size = os.path.getsize(part_file)
+            offset = 0
 
-        if os.path.exists(list_file_path):
-            os.remove(list_file_path)
+            with open(part_file, "rb") as f:
+                while True:
+                    chunk = f.read(FILE_CHUNK_SIZE)
+                    if not chunk:
+                        break
+
+                    chunk_len = len(chunk)
+                    await self._google_drive_client.upload_chunk(
+                        upload_url,
+                        chunk,
+                        offset,
+                        offset + chunk_len - 1,
+                        file_size,
+                    )
+                    offset += chunk_len
 
     @staticmethod
     async def _download_file(session: aiohttp.ClientSession, url: str) -> str:
-        """Download file over network and save into /tmp dir"""
         ext = os.path.splitext(str(url))[1].split("?")[0] or ".mp4"
         filename = f"/tmp/{uuid.uuid4()}{ext}"
         try:

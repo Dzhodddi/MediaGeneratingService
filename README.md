@@ -1,6 +1,9 @@
 # Image Processor Service
 **Service for generation video of all possible combinations of blocks of video, audio, text and voice**
-
+Examples:
+- https://drive.google.com/file/d/10pm0mGV-b_AMTf_RIO00R-ewBD5S4LwA/view?usp=share_link
+- https://drive.google.com/file/d/1EEIkt_OF4xgeb8H-gm1cgku6NaMOQWk9/view?usp=share_link
+- https://drive.google.com/file/d/13jKdedG5dKzTW01Y2w6Z7LbOJA2db94k/view?usp=share_link
 ---
 
 # Stack
@@ -54,7 +57,14 @@ make setup
 ```bash
 make up
 ```
+**After about 30 sec app will be ready to use on: http://localhost:8000"
+### 3. Rebuild project (if needed)
+```bash
+make rebuild
+```
 **Check logs for any errors or issues.**
+
+
 
 ### Possible Issues and Weaknesses in system
 
